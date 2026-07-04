@@ -1,6 +1,8 @@
 package com.pitstop.pitstop_parts.part.web;
 
 import com.pitstop.pitstop_parts.part.web.dto.CreatePartRequest;
+import com.pitstop.pitstop_parts.part.web.dto.DeductPartsRequest;
+import com.pitstop.pitstop_parts.part.web.dto.DeductedPartResponse;
 import com.pitstop.pitstop_parts.part.web.dto.PartResponse;
 import com.pitstop.pitstop_parts.part.service.PartService;
 import jakarta.validation.Valid;
@@ -34,5 +36,16 @@ public class PartController {
     @ResponseStatus(HttpStatus.CREATED)
     public PartResponse create(@Valid @RequestBody CreatePartRequest request) {
         return partService.create(request);
+    }
+
+    @PostMapping("/deduct")
+    public List<DeductedPartResponse> deduct(@Valid @RequestBody DeductPartsRequest request) {
+        return partService.deduct(request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        partService.softDelete(id);
     }
 }

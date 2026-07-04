@@ -1,16 +1,14 @@
 package com.pitstop.pitstop_parts.part.service;
 
-import com.pitstop.pitstop_parts.part.web.dto.CreatePartRequest;
-import com.pitstop.pitstop_parts.part.web.dto.PartResponse;
-import com.pitstop.pitstop_parts.part.exception.PartNotFoundException;
-import com.pitstop.pitstop_parts.part.exception.PartNotFoundExceptionMessage;
-import com.pitstop.pitstop_parts.part.exception.SkuAlreadyExistsException;
-import com.pitstop.pitstop_parts.part.exception.SkuAlreadyExistsExceptionMessage;
+import com.pitstop.pitstop_parts.part.exception.*;
+import com.pitstop.pitstop_parts.part.web.dto.*;
 import com.pitstop.pitstop_parts.part.model.Part;
 import com.pitstop.pitstop_parts.part.repository.PartRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,6 +49,44 @@ public class PartService {
         partRepository.save(part);
         log.info("Part created: sku={}, quantity={}", part.getSku(), part.getQuantityInStock());
         return toResponse(part);
+    }
+
+    public List<DeductedPartResponse> deduct(DeductPartsRequest request) {
+        List<DeductedPartResponse> result = new ArrayList<>();
+
+        for (DeductPartItemRequest item : request.getItems()) {
+            Part part = partRepository.findByIdAndDeletedAtIsNull(item.getPartId())
+                    .orElseThrow(() -> new PartNotFoundException(PartNotFoundExceptionMessage.PART_NOT_FOUND));
+
+            if (part.getQuantityInStock() < item.getQuantity()) {
+                throw new InsufficientStockException(InsufficientStockExceptionMessage.INSUFFICIENT_STOCK);
+            }
+
+            part.setQuantityInStock(part.getQuantityInStock() - item.getQuantity());
+            partRepository.save(part);
+
+            log.info("Part deducted: sku={}, quantity={}, remaining={}",
+                    part.getSku(), item.getQuantity(), part.getQuantityInStock());
+
+            result.add(DeductedPartResponse.builder()
+                    .partId(part.getId())
+                    .partName(part.getName())
+                    .sku(part.getSku())
+                    .quantity(item.getQuantity())
+                    .unitPrice(part.getUnitPrice())
+                    .build());
+        }
+
+        return result;
+    }
+
+    public void softDelete(UUID id) {
+        Part part = partRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new PartNotFoundException(PartNotFoundExceptionMessage.PART_NOT_FOUND));
+
+        part.setDeletedAt(LocalDateTime.now());
+        partRepository.save(part);
+        log.info("Part soft-deleted: sku={}", part.getSku());
     }
 
     private PartResponse toResponse(Part part) {

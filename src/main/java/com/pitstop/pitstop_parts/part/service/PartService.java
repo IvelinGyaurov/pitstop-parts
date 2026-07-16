@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -35,13 +36,29 @@ public class PartService {
     }
 
     public PartResponse create(CreatePartRequest request) {
-        if (partRepository.findBySkuAndDeletedAtIsNull(request.getSku().trim()).isPresent()) {
+        String sku = request.getSku().trim();
+        String name = request.getName().trim();
+
+        if (partRepository.findBySkuAndDeletedAtIsNull(sku).isPresent()) {
             throw new SkuAlreadyExistsException(SkuAlreadyExistsExceptionMessage.SKU_ALREADY_EXISTS);
         }
 
+        Optional<Part> existing = partRepository.findBySku(sku);
+        if (existing.isPresent() && existing.get().isDeleted()) {
+            Part part = existing.get();
+            part.setDeletedAt(null);
+            part.setName(name);
+            part.setUnitPrice(request.getUnitPrice());
+            part.setQuantityInStock(request.getQuantityInStock());
+            partRepository.save(part);
+
+            log.info("Part restored: sku={}, quantity={}", part.getSku(), part.getQuantityInStock());
+            return toResponse(part);
+        }
+
         Part part = Part.builder()
-                .name(request.getName().trim())
-                .sku(request.getSku().trim())
+                .name(name)
+                .sku(sku)
                 .unitPrice(request.getUnitPrice())
                 .quantityInStock(request.getQuantityInStock())
                 .build();

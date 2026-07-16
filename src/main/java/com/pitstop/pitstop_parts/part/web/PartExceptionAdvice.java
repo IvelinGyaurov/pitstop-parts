@@ -1,5 +1,9 @@
-package com.pitstop.pitstop_parts.part.exception;
+package com.pitstop.pitstop_parts.part.web;
 
+import com.pitstop.pitstop_parts.part.exception.InsufficientStockException;
+import com.pitstop.pitstop_parts.part.exception.PartNotFoundException;
+import com.pitstop.pitstop_parts.part.exception.SkuAlreadyExistsException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -36,5 +40,11 @@ public class PartExceptionAdvice {
                 .map(error -> error.getDefaultMessage())
                 .orElse("Invalid request");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<String> handleDataIntegrity(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body("SKU already exists.");
     }
 }

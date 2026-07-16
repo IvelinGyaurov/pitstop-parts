@@ -16,4 +16,6 @@ public interface PartRepository extends JpaRepository<Part, UUID> {
     Optional<Part> findByIdAndDeletedAtIsNull(UUID id);
 
     Optional<Part> findBySkuAndDeletedAtIsNull(String sku);
+
+    Optional<Part> findBySku(String sku);
 }

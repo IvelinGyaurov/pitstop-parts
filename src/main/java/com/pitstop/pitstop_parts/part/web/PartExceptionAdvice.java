@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class PartExceptionAdvice {
@@ -46,5 +48,20 @@ public class PartExceptionAdvice {
     public ResponseEntity<String> handleDataIntegrity(DataIntegrityViolationException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body("SKU already exists.");
+    }
+
+    @ExceptionHandler({
+            NoResourceFoundException.class,
+            NoHandlerFoundException.class
+    })
+    public ResponseEntity<String> handleNotFound(Exception ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Resource not found.");
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleUnexpected(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Something went wrong.");
     }
 }
